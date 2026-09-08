@@ -62,9 +62,24 @@ abi_triple() {
   esac
 }
 
+# config.sub rejects NDK's armv7a-* clang prefix; autotools still uses this --host.
+autotools_host() {
+  case "$1" in
+    armeabi-v7a) echo "arm-linux-androideabi" ;;
+    *) abi_triple "$1" ;;
+  esac
+}
+
 TOOLCHAIN="${NDK_HOME}/toolchains/llvm/prebuilt/$(host_tag)"
 SYSROOT="${TOOLCHAIN}/sysroot"
 export PATH="${TOOLCHAIN}/bin:${PATH}"
+
+# FriBidi gen.tab (and similar) must compile and run on the build machine.
+export CC_FOR_BUILD="${CC_FOR_BUILD:-cc}"
+export CXX_FOR_BUILD="${CXX_FOR_BUILD:-c++}"
+export CFLAGS_FOR_BUILD="${CFLAGS_FOR_BUILD:--O2}"
+export LDFLAGS_FOR_BUILD="${LDFLAGS_FOR_BUILD:-}"
+BUILD_TRIPLE="$("${CC_FOR_BUILD}" -dumpmachine)"
 
 write_meson_cross() {
   local abi="$1"
@@ -103,6 +118,7 @@ EOF
 
 for ABI in "${ABI_LIST[@]}"; do
   TRIPLE="$(abi_triple "${ABI}")"
+  HOST="$(autotools_host "${ABI}")"
   PREFIX="${OUT}/prefix/${ABI}"
   mkdir -p "${PREFIX}"
   export CC="${TOOLCHAIN}/bin/${TRIPLE}${API}-clang"
@@ -123,7 +139,7 @@ for ABI in "${ABI_LIST[@]}"; do
     pushd "${OUT}/src/freetype" >/dev/null
     make distclean || true
     ./autogen.sh || true
-    ./configure --host="${TRIPLE}" --prefix="${PREFIX}" --enable-static --disable-shared --with-png=no --with-harfbuzz=no --with-bzip2=no --with-brotli=no
+    ./configure --build="${BUILD_TRIPLE}" --host="${HOST}" --prefix="${PREFIX}" --enable-static --disable-shared --with-png=no --with-harfbuzz=no --with-bzip2=no --with-brotli=no
     make -j"${JOBS}"
     make install
     popd >/dev/null
@@ -133,8 +149,8 @@ for ABI in "${ABI_LIST[@]}"; do
   if [[ ! -f "${PREFIX}/lib/libfribidi.a" ]]; then
     pushd "${OUT}/src/fribidi" >/dev/null
     make distclean || true
-    ./autogen.sh
-    ./configure --host="${TRIPLE}" --prefix="${PREFIX}" --enable-static --disable-shared --disable-docs
+    NOCONFIGURE=1 ./autogen.sh
+    ./configure --build="${BUILD_TRIPLE}" --host="${HOST}" --prefix="${PREFIX}" --enable-static --disable-shared --disable-docs
     make -j"${JOBS}"
     make install
     popd >/dev/null
@@ -166,7 +182,7 @@ for ABI in "${ABI_LIST[@]}"; do
     pushd "${OUT}/src/libass" >/dev/null
     make distclean || true
     ./autogen.sh
-    ./configure --host="${TRIPLE}" --prefix="${PREFIX}" --enable-static --disable-shared --disable-require-system-font-provider
+    ./configure --build="${BUILD_TRIPLE}" --host="${HOST}" --prefix="${PREFIX}" --enable-static --disable-shared --disable-require-system-font-provider
     make -j"${JOBS}"
     make install
     popd >/dev/null
@@ -176,7 +192,7 @@ for ABI in "${ABI_LIST[@]}"; do
   if [[ ! -f "${PREFIX}/lib/libx264.a" ]]; then
     pushd "${OUT}/src/x264" >/dev/null
     make distclean || true
-    ./configure --host="${TRIPLE}" --prefix="${PREFIX}" --enable-static --disable-cli --disable-opencl --sysroot="${SYSROOT}" --cross-prefix="${TOOLCHAIN}/bin/llvm-" --extra-cflags="-fPIC" --extra-ldflags="-Wl,-z,max-page-size=16384"
+    ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --disable-cli --disable-opencl --sysroot="${SYSROOT}" --cross-prefix="${TOOLCHAIN}/bin/llvm-" --extra-cflags="-fPIC" --extra-ldflags="-Wl,-z,max-page-size=16384"
     make -j"${JOBS}"
     make install
     popd >/dev/null
