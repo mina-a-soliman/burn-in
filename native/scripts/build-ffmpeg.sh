@@ -197,7 +197,7 @@ for ABI in "${ABI_LIST[@]}"; do
   if [[ ! -f "${PREFIX}/lib/libx264.a" ]]; then
     pushd "${OUT}/src/x264" >/dev/null
     make distclean || true
-    ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --disable-cli --disable-opencl --sysroot="${SYSROOT}" --cross-prefix="${TOOLCHAIN}/bin/llvm-" --extra-cflags="-fPIC" --extra-ldflags="-Wl,-z,max-page-size=16384"
+    ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --enable-pic --disable-cli --disable-opencl --sysroot="${SYSROOT}" --cross-prefix="${TOOLCHAIN}/bin/llvm-" --extra-cflags="-fPIC" --extra-ldflags="-Wl,-z,max-page-size=16384"
     make -j"${JOBS}"
     make install
     popd >/dev/null
@@ -208,13 +208,17 @@ for ABI in "${ABI_LIST[@]}"; do
     echo "Skipping FFmpeg configure for ${ABI} (already installed)"
   else
     pushd "${OUT}/src/ffmpeg" >/dev/null
-    make distclean || true
+    if [[ -f ffbuild/config.mak ]]; then
+      make distclean || true
+    fi
+    pkg-config --exists --print-errors x264
     ./configure \
       --prefix="${PREFIX}" \
       --target-os=android \
       --arch="$([[ ${ABI} == arm64-v8a ]] && echo aarch64 || echo arm)" \
       --cpu="$([[ ${ABI} == arm64-v8a ]] && echo armv8-a || echo armv7-a)" \
       --enable-cross-compile \
+      --pkg-config="$(command -v pkg-config)" \
       --cc="${CC}" \
       --cxx="${CXX}" \
       --ar="${AR}" \
@@ -223,6 +227,7 @@ for ABI in "${ABI_LIST[@]}"; do
       --strip="${STRIP}" \
       --sysroot="${SYSROOT}" \
       --enable-gpl \
+      --enable-pic \
       --enable-libass \
       --enable-libfreetype \
       --enable-libharfbuzz \
