@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
+import com.burnsubtitle.data.saf.TempFileStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -37,7 +38,9 @@ class MediaStoreExporter @Inject constructor(
         val uri = resolver.insert(collection, values) ?: throw IOException("MediaStore insert failed")
         try {
             resolver.openOutputStream(uri)?.use { output ->
-                source.inputStream().use { input -> input.copyTo(output) }
+                source.inputStream().buffered(TempFileStore.COPY_BUFFER_BYTES).use { input ->
+                    input.copyTo(output, TempFileStore.COPY_BUFFER_BYTES)
+                }
             } ?: throw IOException("Unable to write $uri")
             values.clear()
             values.put(MediaStore.Video.Media.IS_PENDING, 0)

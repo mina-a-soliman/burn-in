@@ -34,7 +34,7 @@ class VttParser : SubtitleParser {
 
     companion object {
         private const val ARROW = "-->"
-        private val BLOCK_SPLIT = Regex("\n\n+")
+        private val BLOCK_SPLIT = Regex("""\n[ \t]*\n+""")
         private val TAG = Regex("<[^>]+>")
         private val TIMESTAMP = Regex("""(?:(\d{1,3}):)?(\d{1,2}):(\d{2})\.(\d{1,3})""")
 

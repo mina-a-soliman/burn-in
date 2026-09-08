@@ -39,4 +39,13 @@ class SrtParserTest {
         assertEquals(250L, document.cues.first().startMs)
         assertTrue(document.cues.first().text.contains("Test"))
     }
+
+    @Test
+    fun parsesCuesSeparatedByWhitespaceBlankLines() {
+        val raw = "1\n00:00:01,000 --> 00:00:02,000\nFirst\n   \n2\n00:00:03,000 --> 00:00:04,000\nSecond\n"
+        val document = parser.parse(raw)
+        assertEquals(2, document.cues.size)
+        assertEquals("First", document.cues[0].text)
+        assertEquals("Second", document.cues[1].text)
+    }
 }

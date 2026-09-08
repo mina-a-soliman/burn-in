@@ -49,5 +49,9 @@ class SubtitleMarkupTest {
         assertEquals("Hello", SubtitleMarkup.strip("<i>Hello</i>"))
         assertEquals("Hi", SubtitleMarkup.strip("{\\an8}Hi"))
         assertEquals("A & B", SubtitleMarkup.strip("A &amp; B"))
+        assertEquals("A \u200E B", SubtitleMarkup.strip("A &lrm; B"))
+        assertEquals("A \u200F B", SubtitleMarkup.strip("A &rlm; B"))
+        assertEquals("A\u200CB", SubtitleMarkup.strip("A&zwnj;B"))
+        assertEquals("A\u200DB", SubtitleMarkup.strip("A&zwj;B"))
     }
 }

@@ -56,13 +56,24 @@ jobs:
           test -f app/src/main/assets/fonts/NotoNaskhArabic-Regular.ttf
           test -f app/src/main/assets/fonts/NotoSans-Regular.ttf
 
+      - name: Restore FFmpeg native cache
+        id: cache-ffmpeg
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/src/main/jniLibs
+            native/prebuilt
+          key: ffmpeg-binaries-${{ hashFiles('third_party/ffmpeg.lock', 'native/scripts/**', 'native/patches/**') }}-ndk-28.2.13676358
+
       - name: Restore FFmpeg jniLibs
+        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v4
         with:
           name: ffmpeg-jniLibs
           path: app/src/main/jniLibs
 
       - name: Restore FFmpeg headers
+        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v4
         with:
           name: ffmpeg-headers

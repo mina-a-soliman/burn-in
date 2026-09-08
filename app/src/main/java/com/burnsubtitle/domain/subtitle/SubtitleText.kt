@@ -31,5 +31,9 @@ object SubtitleText {
         "quot" to "\"",
         "apos" to "'",
         "nbsp" to " ",
+        "lrm" to "\u200E",
+        "rlm" to "\u200F",
+        "zwnj" to "\u200C",
+        "zwj" to "\u200D",
     )
 }

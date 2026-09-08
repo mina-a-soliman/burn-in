@@ -33,6 +33,7 @@ class AssParser : SubtitleParser {
                 val cueText = parts[textIndex]
                     .replace("\\N", "\n")
                     .replace("\\n", "\n")
+                    .replace("\\h", " ")
                     .replace(OVERRIDE, "")
                     .trim()
                 if (cueText.isEmpty()) return@mapIndexedNotNull null

@@ -9,6 +9,8 @@
 #include <cstring>
 #include <mutex>
 
+#include <pthread.h>
+
 namespace {
 std::atomic<bool> g_cancel{false};
 JavaVM *g_vm = nullptr;
@@ -16,6 +18,18 @@ jobject g_engine = nullptr;
 jmethodID g_on_log = nullptr;
 jmethodID g_on_progress = nullptr;
 std::mutex g_cb_mutex;
+pthread_key_t g_detach_key;
+pthread_once_t g_key_once = PTHREAD_ONCE_INIT;
+
+void detach_thread_destructor(void * /* value */) {
+    if (g_vm != nullptr) {
+        g_vm->DetachCurrentThread();
+    }
+}
+
+void make_detach_key() {
+    pthread_key_create(&g_detach_key, detach_thread_destructor);
+}
 
 JNIEnv *env_for_current_thread() {
     if (g_vm == nullptr) {
@@ -26,6 +40,8 @@ JNIEnv *env_for_current_thread() {
         return env;
     }
     if (g_vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
+        pthread_once(&g_key_once, make_detach_key);
+        pthread_setspecific(g_detach_key, reinterpret_cast<void *>(1));
         return env;
     }
     return nullptr;

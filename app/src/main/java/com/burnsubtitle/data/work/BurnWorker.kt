@@ -12,6 +12,7 @@ import com.burnsubtitle.R
 import com.burnsubtitle.data.media.MediaStoreExporter
 import com.burnsubtitle.domain.model.BurnJob
 import com.burnsubtitle.domain.model.SubtitlePosition
+import com.burnsubtitle.data.saf.TempFileStore
 import com.burnsubtitle.domain.model.SubtitleStyle
 import com.burnsubtitle.ffmpeg.FFmpegEngine
 import com.burnsubtitle.ffmpeg.FFmpegException
@@ -31,6 +32,7 @@ class BurnWorker @AssistedInject constructor(
     private val processor: SubtitleBurnProcessor,
     private val exporter: MediaStoreExporter,
     private val notifier: BurnForegroundNotifier,
+    private val tempFiles: TempFileStore,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -49,13 +51,18 @@ class BurnWorker @AssistedInject constructor(
                 processor.run(job)
                 progressJob.cancel()
                 if (isStopped) {
+                    tempFiles.deleteJobDir(job.id)
                     return@coroutineScope cancelledResult()
                 }
+                // Free the copied input video before exporting output
+                runCatching { File(job.videoCachePath).delete() }
                 val output = File(job.outputPath)
                 if (!output.exists() || output.length() == 0L) {
+                    tempFiles.deleteJobDir(job.id)
                     return@coroutineScope Result.failure(workDataOf(KEY_ERROR to errorMessage(FFmpegException.InvalidOutput())))
                 }
                 val uri = exporter.exportVideo(output, job.displayName)
+                tempFiles.deleteJobDir(job.id)
                 Result.success(
                     workDataOf(
                         KEY_OUTPUT_URI to uri.toString(),
@@ -65,10 +72,13 @@ class BurnWorker @AssistedInject constructor(
                 )
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 processor.cancel()
+                tempFiles.deleteJobDir(job.id)
                 throw cancelled
             } catch (error: FFmpegException.Cancelled) {
+                tempFiles.deleteJobDir(job.id)
                 cancelledResult()
             } catch (error: FFmpegException) {
+                tempFiles.deleteJobDir(job.id)
                 Result.failure(
                     workDataOf(
                         KEY_ERROR to errorMessage(error),
@@ -76,6 +86,7 @@ class BurnWorker @AssistedInject constructor(
                     ),
                 )
             } catch (error: Exception) {
+                tempFiles.deleteJobDir(job.id)
                 Result.failure(workDataOf(KEY_ERROR to (error.message ?: error.javaClass.simpleName)))
             } finally {
                 progressJob.cancel()
@@ -85,6 +96,9 @@ class BurnWorker @AssistedInject constructor(
 
     override fun onStopped() {
         processor.cancel()
+        inputData.getString(KEY_ID)?.let { jobId ->
+            runCatching { tempFiles.deleteJobDir(jobId) }
+        }
         super.onStopped()
     }
 

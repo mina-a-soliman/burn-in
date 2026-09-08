@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: native/out
-          key: ffmpeg-${{ hashFiles('third_party/ffmpeg.lock', 'native/scripts/**') }}-ndk-28.2.13676358
+          key: ffmpeg-${{ hashFiles('third_party/ffmpeg.lock', 'native/scripts/**', 'native/patches/**') }}-ndk-28.2.13676358
 
       - name: Detect built FFmpeg
         id: ffmpeg_built
@@ -58,6 +58,14 @@ jobs:
 
       - name: Package jniLibs and headers
         run: ./native/scripts/package-jniLibs.sh
+
+      - name: Cache FFmpeg binaries and headers
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/src/main/jniLibs
+            native/prebuilt
+          key: ffmpeg-binaries-${{ hashFiles('third_party/ffmpeg.lock', 'native/scripts/**', 'native/patches/**') }}-ndk-28.2.13676358
 
       - name: Upload jniLibs
         uses: actions/upload-artifact@v4
