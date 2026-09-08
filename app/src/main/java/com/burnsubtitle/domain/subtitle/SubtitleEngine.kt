@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SubtitleEngine @Inject constructor(
-    private val parsers: List<SubtitleParser>,
+    private val parsers: @JvmSuppressWildcards List<SubtitleParser>,
     private val writer: AssDocumentWriter,
 ) {
     fun parse(text: String, format: SubtitleFormat): SubtitleDocument {

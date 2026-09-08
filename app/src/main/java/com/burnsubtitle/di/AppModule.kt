@@ -25,6 +25,7 @@ object AppModule {
 
     @Provides
     @Singleton
+    @JvmSuppressWildcards
     fun provideSubtitleParsers(): List<SubtitleParser> {
         return listOf(SrtParser(), VttParser(), AssParser())
     }
