@@ -23,7 +23,7 @@ class VttParser : SubtitleParser {
         val times = lines[timeLineIndex].split(ARROW, limit = 2)
         if (times.size != 2) return null
         val start = parseTimestamp(times[0].trim()) ?: return null
-        val end = parseTimestamp(times[1].substringBefore(' ').trim()) ?: return null
+        val end = parseTimestamp(times[1].trim().substringBefore(' ')) ?: return null
         val text = lines.drop(timeLineIndex + 1)
             .joinToString("\n")
             .replace(TAG, "")
