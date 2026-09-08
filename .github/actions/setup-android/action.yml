@@ -49,6 +49,5 @@ runs:
         fi
         {
           printf 'sdk.dir=%s\n' "${sdk}"
-          printf 'ndk.dir=%s/ndk/28.2.13676358\n' "${sdk}"
         } > "${GITHUB_WORKSPACE}/local.properties"
         echo "Wrote local.properties (sdk.dir=${sdk})"

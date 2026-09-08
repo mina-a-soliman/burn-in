@@ -90,16 +90,14 @@ class BurnWorker @AssistedInject constructor(
                 Result.failure(workDataOf(KEY_ERROR to (error.message ?: error.javaClass.simpleName)))
             } finally {
                 progressJob.cancel()
+                if (isStopped) {
+                    processor.cancel()
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                        tempFiles.deleteJobDir(job.id)
+                    }
+                }
             }
         }
-    }
-
-    override fun onStopped() {
-        processor.cancel()
-        inputData.getString(KEY_ID)?.let { jobId ->
-            runCatching { tempFiles.deleteJobDir(jobId) }
-        }
-        super.onStopped()
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(0)
