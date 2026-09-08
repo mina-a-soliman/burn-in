@@ -7,7 +7,11 @@ plugins {
 
 android {
     namespace = "com.burnsubtitle"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 0
+        }
+    }
     ndkVersion = "28.2.13676358"
 
     defaultConfig {
