@@ -148,11 +148,16 @@ for ABI in "${ABI_LIST[@]}"; do
 
   if [[ ! -f "${PREFIX}/lib/libfribidi.a" ]]; then
     pushd "${OUT}/src/fribidi" >/dev/null
-    make distclean || true
-    NOCONFIGURE=1 ./autogen.sh
-    ./configure --build="${BUILD_TRIPLE}" --host="${HOST}" --prefix="${PREFIX}" --enable-static --disable-shared --disable-docs
-    make -j"${JOBS}"
-    make install
+    rm -rf "build-${ABI}"
+    meson setup "build-${ABI}" \
+      --cross-file "${MESON_CROSS}" \
+      --prefix "${PREFIX}" \
+      --default-library static \
+      -Ddocs=false \
+      -Dbin=false \
+      -Dtests=false
+    meson compile -C "build-${ABI}"
+    meson install -C "build-${ABI}"
     popd >/dev/null
   fi
   test -f "${PREFIX}/lib/libfribidi.a"
