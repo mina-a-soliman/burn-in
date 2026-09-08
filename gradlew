@@ -26,7 +26,7 @@ done
 APP_HOME=$( cd "${app_path%/*}/" && pwd -P ) || exit
 APP_NAME="Gradle"
 APP_BASE_NAME=${0##*/}
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+DEFAULT_JVM_OPTS='-Xmx64m -Xms64m'
 
 if [ -z "${JAVA_HOME}" ]; then
     JAVACMD=java
